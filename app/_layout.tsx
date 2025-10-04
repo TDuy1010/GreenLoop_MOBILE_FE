@@ -1,24 +1,39 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
+import { useEffect } from "react";
+import { Stack } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
+import { useFonts } from "expo-font";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import "./global.css";
+import {AuthProvider} from "@/contexts/AuthContext";
 
-import { useColorScheme } from '@/hooks/use-color-scheme';
-
-export const unstable_settings = {
-  anchor: '(tabs)',
-};
+// Keep the splash screen visible while we fetch resources
+SplashScreen.preventAutoHideAsync().catch(() => {
+    // no-op if already prevented
+});
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
+    const [fontsLoaded, error] = useFonts({
+        "Quicksand-Bold": require("../assets/fonts/Quicksand-Bold.ttf"),
+        "Quicksand-Regular": require("../assets/fonts/Quicksand-Regular.ttf"),
+        "Quicksand-Medium": require("../assets/fonts/Quicksand-Medium.ttf"),
+        "Quicksand-Light": require("../assets/fonts/Quicksand-Light.ttf"),
+        "Quicksand-SemiBold": require("../assets/fonts/Quicksand-SemiBold.ttf"),
+    });
 
-  return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
-  );
+    useEffect(() => {
+        if (error) throw error;
+        if (fontsLoaded) {
+            SplashScreen.hideAsync();
+        }
+    }, [fontsLoaded, error]);
+
+    if (!fontsLoaded) return null;
+
+    return (
+        <>
+            <AuthProvider>
+                <Stack screenOptions={{ headerShown: false }} />
+            </AuthProvider>
+        </>
+    );
 }

@@ -6,7 +6,7 @@ export default function TabsLayout() {
     return (
         <Tabs
             screenOptions={{
-                headerShown: true,
+                headerShown: false,
                 tabBarActiveTintColor: "#16A34A",
                 tabBarInactiveTintColor: "#878787",
                 headerTitleStyle: { fontFamily: "Quicksand-Bold" },
@@ -19,6 +19,15 @@ export default function TabsLayout() {
                     title: "Trang chủ",
                     tabBarIcon: ({ color, size }) => (
                         <Ionicons name="home-outline" color={color} size={size} />
+                    ),
+                }}
+            />
+            <Tabs.Screen
+                name="search"
+                options={{
+                    title: "Tìm kiếm",
+                    tabBarIcon: ({ color, size }) => (
+                        <Ionicons name="search-outline" color={color} size={size} />
                     ),
                 }}
             />

@@ -18,13 +18,13 @@ import { MOCK_PRODUCTS, CATEGORIES } from "@/constants/mockData";
 import { Product, ProductCategory } from "@/types/product";
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import InfiniteCarousel from '@/components/carousel/InfiniteCarousel';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // Banner layout
 const BANNER_WIDTH = SCREEN_WIDTH * 0.95;
 const BANNER_HEIGHT = BANNER_WIDTH * 0.7;
-const DOT_BASE_WIDTH = Math.max(18, Math.min(28, SCREEN_WIDTH * 0.06));
 
 interface Banner {
     id: string;
@@ -187,12 +187,10 @@ export default function HomeScreen() {
         }, 500);
     }, [startAutoScroll]);
 
-    // Product press
     const handleProductPress = useCallback((product: Product) => {
-        Alert.alert(product.name, `${product.description}\n\nGiá: ${product.price.toLocaleString('vi-VN')}đ`, [{ text: 'Đóng' }]);
+        router.push(`/(products)/${product.id}`);
     }, []);
 
-    // Render banner item (vIndex là index trong danh sách loop)
     const renderBannerItem = useCallback(
         ({ item, index }: ListRenderItemInfo<Banner>) => <BannerItem item={item} vIndex={index} scrollX={scrollX} />,
         [scrollX]
@@ -203,89 +201,49 @@ export default function HomeScreen() {
         return (
             <>
                 {/* Banner Section */}
-                <View className="bg-gray-50">
-                    <Animated.FlatList
-                        ref={bannerRef}
-                        data={loopedData}
-                        renderItem={renderBannerItem}
-                        keyExtractor={(_, idx) => `v-${idx}`}
-                        horizontal
-                        pagingEnabled
-                        showsHorizontalScrollIndicator={false}
-                        onScroll={onScroll}
-                        onMomentumScrollEnd={onMomentumScrollEnd}
-                        onScrollBeginDrag={onScrollBeginDrag}
-                        onScrollEndDrag={onScrollEndDrag}
-                        scrollEventThrottle={16}
-                        decelerationRate="fast"
-                        bounces={false}
-                        getItemLayout={(_, index) => ({
-                            length: SCREEN_WIDTH,
-                            offset: SCREEN_WIDTH * index,
-                            index,
-                        })}
-                        initialScrollIndex={INITIAL_VINDEX}
-                        onScrollToIndexFailed={(info) => {
-                            // phòng khi list chưa đo xong
-                            setTimeout(() => bannerRef.current?.scrollToIndex({ index: info.index, animated: false }), 250);
-                        }}
-                    />
-
-                    {/* Indicators (scaleX + responsive) */}
-                    <View className="flex-row justify-center mt-5">
-                        {BANNERS.map((_, realIdx) => {
-                            // vị trí trung tâm của item thực (dịch +1 vì có DUP_LAST ở đầu)
-                            const center = (realIdx + 1) * SCREEN_WIDTH;
-                            const inputRange = [center - SCREEN_WIDTH, center, center + SCREEN_WIDTH];
-
-                            const scaleX = scrollX.interpolate({
-                                inputRange,
-                                outputRange: [0.33, 1, 0.33],
-                                extrapolate: 'clamp',
-                            });
-
-                            const opacity = scrollX.interpolate({
-                                inputRange,
-                                outputRange: [0.3, 1, 0.3],
-                                extrapolate: 'clamp',
-                            });
-
-                            return (
-                                <TouchableOpacity
-                                    key={realIdx}
-                                    onPress={() => {
-                                        isUserInteracting.current = true;
-                                        const targetVIndex = realIdx + 1; // map real -> virtual
-                                        currentVIndex.current = targetVIndex;
-                                        bannerRef.current?.scrollToOffset({
-                                            offset: targetVIndex * SCREEN_WIDTH,
-                                            animated: true,
-                                        });
-                                        setActiveBannerIndex(realIdx);
-                                        setTimeout(() => {
-                                            isUserInteracting.current = false;
-                                            startAutoScroll();
-                                        }, 500);
+                <View className="bg-gray-50 py-6">
+                    <InfiniteCarousel
+                        data={BANNERS}
+                        keyExtractor={(b) => b.id}
+                        renderItem={({ item, realIndex, width }) => (
+                            <TouchableOpacity
+                                onPress={() => Alert.alert(item.title, item.description)}
+                                activeOpacity={0.9}
+                            >
+                                <View
+                                    style={{
+                                        width: width * 0.95,
+                                        borderRadius: 16,
+                                        overflow: 'hidden',
+                                        backgroundColor: '#F3F4F6',
                                     }}
-                                    style={{ paddingHorizontal: 4 }}
                                 >
-                                    <Animated.View
-                                        style={{
-                                            width: DOT_BASE_WIDTH,
-                                            height: 8,
-                                            borderRadius: 4,
-                                            backgroundColor: '#16A34A',
-                                            opacity,
-                                            transform: [{ scaleX }],
-                                        }}
-                                    />
-                                </TouchableOpacity>
-                            );
-                        })}
-                    </View>
+                                    <Image source={{ uri: item.image }} style={{ width: '100%', height: (width * 0.95) * 0.7 }} />
+                                    <View className="absolute bottom-3 left-3 right-3">
+                                        <View className="bg-black/40 rounded-xl p-2.5">
+                                            <View className="flex-row items-center justify-between">
+                                                <View className="flex-1 mr-2">
+                                                    <Text className="font-quicksandBold text-white text-sm" numberOfLines={1}>
+                                                        {item.title}
+                                                    </Text>
+                                                    <Text className="font-quicksand text-white/80 text-[11px]" numberOfLines={1}>
+                                                        {item.description}
+                                                    </Text>
+                                                </View>
+                                                <View className={`px-2 py-1 rounded-lg ${item.type === 'event' ? 'bg-blue-500' : 'bg-orange-500'}`}>
+                                                    <Text className="font-quicksandBold text-white text-[10px]">
+                                                        {item.type === 'event' ? 'Sự kiện' : 'Giảm giá'}
+                                                    </Text>
+                                                </View>
+                                            </View>
+                                        </View>
+                                    </View>
+                                </View>
+                            </TouchableOpacity>
+                        )}
+                    />
                 </View>
 
-                {/* Category Filter */}
                 <View className="bg-gray-50 py-4 mt-2">
                     <Text className="font-quicksandBold text-base text-gray-800 px-5 mb-3">Danh mục</Text>
                     <FlatList
@@ -315,7 +273,6 @@ export default function HomeScreen() {
                     />
                 </View>
 
-                {/* Product Section Header */}
                 <View className="bg-gray-50 mt-2 pt-4">
                     <View className="px-5 pb-3 flex-row justify-between items-center">
                         <Text className="font-quicksandBold text-base text-gray-800">Sản phẩm nổi bật</Text>
@@ -361,10 +318,9 @@ export default function HomeScreen() {
                 </View>
             </View>
 
-            {/* ProductList */}
             <ProductList
                 products={filteredProducts}
-                onProductPress={(p) => Alert.alert(p.name, `${p.description}\n\nGiá: ${p.price.toLocaleString('vi-VN')}đ`, [{ text: 'Đóng' }])}
+                onProductPress={handleProductPress}
                 ListHeaderComponent={ListHeader}
             />
         </SafeAreaView>
